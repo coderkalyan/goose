@@ -1,8 +1,9 @@
-extern crate egg;
-
-use std::{error, fmt, str};
+mod json;
 
 use egg::{define_language, rewrite, Id, Symbol};
+use json::Design;
+use serde_json::from_reader;
+use std::{error, fmt, fs::File, io::BufReader, str};
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone)]
 enum Bit {
@@ -45,10 +46,12 @@ impl str::FromStr for Bit {
 define_language! {
     enum Logic {
         "not" = Not(Id),
+
         "and" = And([Id; 2]),
         "or" = Or([Id; 2]),
         "xor" = Xor([Id; 2]),
         "add" = Add([Id; 3]),
+
         "output" = Output(Box<[Id]>),
 
         Bit(Bit),
@@ -61,6 +64,12 @@ fn adder(i: u32) -> String {
 }
 
 fn main() {
+    let file = File::open("add.json").unwrap();
+    let reader = BufReader::new(file);
+    let design: Design = from_reader(reader).unwrap();
+
+    // println!("{:?}", design);
+
     let mut s = String::from("(output ");
     for i in 0..32 {
         s = format!("{} {}", s, adder(i));
@@ -79,7 +88,7 @@ fn main() {
     // let s = "(output (xor (xor i_a i_b) i_cin) (or (and (xor i_a i_b) i_cin) (and i_a i_b)))";
     let expr: egg::RecExpr<Logic> = s.parse().unwrap();
 
-    println!("{:?}", expr);
+    // println!("{:?}", expr);
 
     let rules: Vec<egg::Rewrite<Logic, ()>> = vec![
         rewrite!("fold"; "(and ?a 0)" => "0"),
